@@ -7,7 +7,7 @@ import (
 )
 
 type Config struct {
-	Env        string     `yaml:"env" env-default:"local"`
+	Env        string     `yaml:"env"`
 	HttpServer HttpServer `yaml:"http_server"`
 }
 
@@ -18,7 +18,7 @@ type HttpServer struct {
 
 func Load() (*Config, error) {
 	var cfg Config
-	configPath := os.Getenv("CONFIG_PATH")
+	configPath := os.Getenv("CFG_PATH")
 	if configPath == "" {
 		return &cfg, fmt.Errorf("CONFIG_PATH is not set")
 	}
