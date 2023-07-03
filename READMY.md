@@ -16,8 +16,9 @@
 
 ---
 
-# Getting Started
+# Getting Started   
 
+Для запуска нужно указать путь к конфигу в переменную окружения: CONFIG_PATH
 
 ---
 
