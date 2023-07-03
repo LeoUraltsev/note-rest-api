@@ -1,0 +1,4 @@
+env: "prod" #local, dev, prod
+http_server:
+  host: "localhost"
+  port: "10000"
