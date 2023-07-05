@@ -2,6 +2,9 @@ package app
 
 import (
 	"NoteRestApi/config"
+	"NoteRestApi/pkg/postgres"
+	"context"
+	"fmt"
 	"golang.org/x/exp/slog"
 	stdLog "log"
 	"os"
@@ -26,6 +29,11 @@ func Run() {
 	log.Debug("debug messages are enabled")
 
 	// TODO: init storage: postgresql
+	client, err := postgres.NewClient(context.Background(), "postgresql://postgres:7892carat@localhost:5432/noterestapi")
+
+	if err := client.Pool.Ping(context.Background()); err != nil {
+		log.Error(fmt.Sprintf("Ping database error: %v", err))
+	}
 
 	// TODO: init router: chi
 
@@ -34,7 +42,6 @@ func Run() {
 
 func setupLogger(env string) *slog.Logger {
 	var log *slog.Logger
-
 	switch env {
 	case envLocal:
 		log = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))

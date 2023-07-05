@@ -18,7 +18,7 @@ type HttpServer struct {
 
 func Load() (*Config, error) {
 	var cfg Config
-	configPath := os.Getenv("CFG_PATH")
+	configPath := "./config/config.yaml"
 	if configPath == "" {
 		return &cfg, fmt.Errorf("CONFIG_PATH is not set")
 	}
