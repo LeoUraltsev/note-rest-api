@@ -2,11 +2,16 @@ package app
 
 import (
 	"NoteRestApi/config"
+	v1 "NoteRestApi/internal/controller/http/v1"
+	"NoteRestApi/internal/repo"
+	"NoteRestApi/internal/service"
 	"NoteRestApi/pkg/postgres"
 	"context"
 	"fmt"
+	"github.com/go-chi/chi/v5"
 	"golang.org/x/exp/slog"
 	stdLog "log"
+	"net/http"
 	"os"
 )
 
@@ -28,16 +33,24 @@ func Run() {
 	log.Info("starting note service", slog.String("env", cfg.Env))
 	log.Debug("debug messages are enabled")
 
-	// TODO: init storage: postgresql
 	client, err := postgres.NewClient(context.Background(), "postgresql://postgres:7892carat@localhost:5432/noterestapi")
 
 	if err := client.Pool.Ping(context.Background()); err != nil {
 		log.Error(fmt.Sprintf("Ping database error: %v", err))
 	}
 
-	// TODO: init router: chi
+	rep := repo.NewRepositories(client)
 
-	// TODO: run server
+	services := service.NewNoteServices(rep)
+
+	handler := chi.NewRouter()
+
+	v1.NewRouter(handler, services)
+
+	err = http.ListenAndServe(fmt.Sprintf("%s:%s", cfg.HttpServer.Host, cfg.HttpServer.Port), handler)
+	if err != nil {
+		return
+	}
 }
 
 func setupLogger(env string) *slog.Logger {
