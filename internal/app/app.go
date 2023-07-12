@@ -3,6 +3,7 @@ package app
 import (
 	"NoteRestApi/config"
 	v1 "NoteRestApi/internal/controller/http/v1"
+	mwLogger "NoteRestApi/internal/controller/http/v1/middleware/logger"
 	"NoteRestApi/internal/repo"
 	"NoteRestApi/internal/service"
 	"NoteRestApi/pkg/postgres"
@@ -33,24 +34,40 @@ func Run() {
 	log.Info("starting note service", slog.String("env", cfg.Env))
 	log.Debug("debug messages are enabled")
 
-	client, err := postgres.NewClient(context.Background(), "postgresql://postgres:7892carat@localhost:5432/noterestapi")
-
-	if err := client.Pool.Ping(context.Background()); err != nil {
-		log.Error(fmt.Sprintf("Ping database error: %v", err))
+	log.Info("init database")
+	pgUrl := os.Getenv("PG_CONN_PATH")
+	if pgUrl == "" {
+		log.Error("PG_CONN_PATH is not set")
+		os.Exit(1)
 	}
+	client, err := postgres.NewClient(context.Background(), pgUrl)
 
-	rep := repo.NewRepositories(client)
+	log.Info("create repositories")
+	rep := repo.NewRepositories(client, log)
 
+	log.Info("create services")
 	services := service.NewNoteServices(rep)
 
-	handler := chi.NewRouter()
+	log.Info("init Chi router")
+	router := chi.NewRouter()
 
-	v1.NewRouter(handler, services)
+	router.Use(mwLogger.New(log))
 
-	err = http.ListenAndServe(fmt.Sprintf("%s:%s", cfg.HttpServer.Host, cfg.HttpServer.Port), handler)
-	if err != nil {
-		return
+	log.Info("init router")
+	v1.NewRouter(router, services)
+
+	srv := &http.Server{
+		Addr:    fmt.Sprintf("%s:%s", cfg.HttpServer.Host, cfg.HttpServer.Port),
+		Handler: router,
 	}
+
+	log.Info("server starting", slog.String("Host", cfg.HttpServer.Host), slog.String("Port", cfg.HttpServer.Port))
+
+	if err := srv.ListenAndServe(); err != nil {
+		log.Error("Server starting error:", err)
+		panic(err)
+	}
+
 }
 
 func setupLogger(env string) *slog.Logger {
